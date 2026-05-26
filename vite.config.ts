@@ -5,7 +5,7 @@ const fromHere = (relativePath: string): string =>
 
 export default defineConfig({
 	root: 'web',
-	base: '/',
+	base: './',
 	build: {
 		outDir: '../dist',
 		emptyOutDir: true,
