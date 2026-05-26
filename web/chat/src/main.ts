@@ -1,4 +1,6 @@
-import { PromptHelper } from './helpers/prompt_helper.js';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+import { PromptHelper, type LanguageModelSession } from './helpers/prompt_helper.js';
 import { WikipediaHelper } from './helpers/wikipedia_helper.js';
 
 const SYSTEM_PROMPT =
@@ -14,6 +16,8 @@ const QUERY_SYSTEM_PROMPT =
  * between the user input form and the streaming answer pipeline.
  */
 export class Main {
+	private static chatSession: LanguageModelSession | null = null;
+
 	/**
 	 * Bootstraps the chat UI: caches DOM references, gates on Prompt API
 	 * availability, and binds the form submit handler.
@@ -69,22 +73,41 @@ export class Main {
 		Main.appendBubbleUi(messagesEl, 'user', userInput);
 		// Start the assistant bubble in an "empty" state until the first chunk arrives.
 		const assistantEl = Main.appendBubbleUi(messagesEl, 'assistant', '');
-		assistantEl.classList.add('is-empty');
+		const spinnerEl = document.createElement('div');
+		spinnerEl.className = 'spinner-border spinner-border-sm text-secondary';
+		spinnerEl.setAttribute('role', 'status');
+		assistantEl.appendChild(spinnerEl);
+		assistantEl.dataset.state = 'pending';
 
 		inputEl.value = '';
 		inputEl.disabled = true;
 		submitEl.disabled = true;
 
+		if (Main.chatSession === null) {
+			Main.chatSession = await PromptHelper.createSession(SYSTEM_PROMPT);
+		}
+
+		let accumulated = '';
 		try {
-			await Main.queryWikipedia(userInput, (chunk) => {
-				if (assistantEl.classList.contains('is-empty') === true) {
-					assistantEl.classList.remove('is-empty');
-				}
-				assistantEl.textContent = (assistantEl.textContent ?? '') + chunk;
-				messagesEl.scrollTop = messagesEl.scrollHeight;
-			});
+			await Main.queryWikipedia(
+				userInput,
+				Main.chatSession,
+				(statusText) => {
+					Main.insertStatusBubbleUi(messagesEl, assistantEl, statusText);
+					messagesEl.scrollTop = messagesEl.scrollHeight;
+				},
+				(chunk) => {
+					if (assistantEl.dataset.state === 'pending') {
+						delete assistantEl.dataset.state;
+					}
+					accumulated += chunk;
+					const rendered = marked.parse(accumulated.trimEnd(), { async: false }) as string;
+					assistantEl.innerHTML = DOMPurify.sanitize(rendered);
+					messagesEl.scrollTop = messagesEl.scrollHeight;
+				},
+			);
 		} catch (err) {
-			assistantEl.classList.remove('is-empty');
+			delete assistantEl.dataset.state;
 			const message = err instanceof Error ? err.message : String(err);
 			assistantEl.textContent = `Error: ${message}`;
 		} finally {
@@ -105,11 +128,15 @@ export class Main {
 	 * @param onChunk    - Invoked for each streamed text fragment, plus a
 	 *                     leading status hint with the generated search query.
 	 */
-	private static async queryWikipedia(userInput: string, onChunk: (text: string) => void): Promise<void> {
+	private static async queryWikipedia(
+		userInput: string,
+		session: LanguageModelSession,
+		onStatus: (text: string) => void,
+		onChunk: (text: string) => void,
+	): Promise<void> {
 		const searchQuery = await Main.generateSearchQuery(userInput);
 		console.log(`Generated search query: "${searchQuery}"`);
-		alert('sdfsdfsd')
-		onChunk(`Searching Wikipedia for: "${searchQuery}"\n\n`);
+		onStatus(`Searching Wikipedia for: "${searchQuery}"`);
 
 		const searchResults = await WikipediaHelper.search(searchQuery, 1);
 		if (searchResults.length === 0) {
@@ -120,13 +147,8 @@ export class Main {
 		const article = await WikipediaHelper.getSummary(searchResults[0].key);
 		const userPrompt = Main.buildPrompt(article.title, article.extract, userInput);
 
-		const session = await PromptHelper.createSession(SYSTEM_PROMPT);
-		try {
-			for await (const chunk of PromptHelper.streamPrompt(session, userPrompt)) {
-				onChunk(chunk);
-			}
-		} finally {
-			session.destroy();
+		for await (const chunk of PromptHelper.streamPrompt(session, userPrompt)) {
+			onChunk(chunk);
 		}
 	}
 
@@ -191,10 +213,42 @@ export class Main {
 		text: string,
 	): HTMLDivElement {
 		const bubbleEl = document.createElement('div');
-		bubbleEl.className = `bubble bubble--${role}`;
+		const baseClasses = 'px-3 py-2 shadow-sm rounded-4 lh-base';
+		if (role === 'user') {
+			bubbleEl.className = `${baseClasses} align-self-end bg-primary text-white`;
+			bubbleEl.style.setProperty('border-bottom-right-radius', '0', 'important');
+			bubbleEl.style.whiteSpace = 'pre-wrap';
+		} else {
+			bubbleEl.className = `${baseClasses} align-self-start bg-body-tertiary border markdown-bubble`;
+			bubbleEl.style.setProperty('border-bottom-left-radius', '0', 'important');
+		}
+		bubbleEl.style.maxWidth = '85%';
+		bubbleEl.style.wordWrap = 'break-word';
 		bubbleEl.textContent = text;
 		messagesEl.appendChild(bubbleEl);
 		messagesEl.scrollTop = messagesEl.scrollHeight;
+		return bubbleEl;
+	}
+
+	/**
+	 * Creates a centered, grayed pill bubble representing an intermediary
+	 * step (e.g. the Wikipedia search query that was generated) and inserts
+	 * it just before the given reference element.
+	 *
+	 * @param messagesEl  - Container that holds the chat bubbles.
+	 * @param beforeEl    - Existing element the status bubble is inserted before.
+	 * @param text        - Status text to display.
+	 * @returns The created status bubble element.
+	 */
+	private static insertStatusBubbleUi(
+		messagesEl: HTMLElement,
+		beforeEl: HTMLElement,
+		text: string,
+	): HTMLDivElement {
+		const bubbleEl = document.createElement('div');
+		bubbleEl.className = 'align-self-center bg-body-secondary text-secondary small fst-italic rounded-pill px-3 py-1';
+		bubbleEl.textContent = text;
+		messagesEl.insertBefore(bubbleEl, beforeEl);
 		return bubbleEl;
 	}
 }

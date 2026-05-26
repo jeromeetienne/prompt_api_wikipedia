@@ -1,63 +1,77 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Talk with Wikipedia</title>
-		<link
-			rel="stylesheet"
-			href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-			integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-			crossorigin="anonymous"
-		/>
-	</head>
-	<body class="d-flex flex-column min-vh-100">
-		<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
-			<div class="container">
-				<a class="navbar-brand fw-semibold" href="/">Talk with Wikipedia</a>
-				<div class="ms-auto">
-					<a
-						class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-2"
-						href="https://github.com/jeromeetienne/prompt_api_wikipedia"
-						target="_blank"
-						rel="noreferrer"
-					>
-						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-							<path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-						</svg>
-						GitHub
-					</a>
-				</div>
-			</div>
-		</nav>
+<html lang="en">
 
-		<main class="flex-grow-1 d-flex align-items-center">
-			<div class="container py-5">
-				<div class="row justify-content-center text-center">
-					<div class="col-lg-8">
-						<h1 class="display-4 fw-bold mb-3">Chat with Wikipedia, on-device</h1>
-						<p class="lead text-secondary mb-4">
-							Ask questions in plain English and get grounded answers drawn from
-							Wikipedia. Powered by Chrome's built-in Prompt API — the language
-							model runs locally in your browser, no server round-trip required.
-						</p>
-						<p class="text-secondary mb-5">
-							Each question is distilled into a Wikipedia search query, the top
-							matching article is retrieved, and the model streams a response
-							restricted to that article's content.
-						</p>
-						<a href="/chat/" class="btn btn-primary btn-lg px-4 py-2">
-							Start chatting
-						</a>
-					</div>
-				</div>
-			</div>
-		</main>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat with Wikipedia</title>
+    <script>
+        (function () {
+            var mq = window.matchMedia('(prefers-color-scheme: dark)');
+            var apply = function () {
+                document.documentElement.setAttribute('data-bs-theme', mq.matches ? 'dark' : 'light');
+            };
+            apply();
+            mq.addEventListener('change', apply);
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+</head>
 
-		<footer class="border-top py-3 text-center text-secondary small">
-			<div class="container">
-				Built with Chrome Prompt API · Wikipedia REST API · Bootstrap
-			</div>
-		</footer>
-	</body>
+<body class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+        <div class="container" style="max-width: 780px;">
+            <a class="navbar-brand fw-semibold" href="/">Chat with Wikipedia</a>
+            <div class="ms-auto">
+                <a class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+                    href="https://github.com/jeromeetienne/prompt_api_wikipedia" target="_blank" rel="noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16"
+                        fill="currentColor" aria-hidden="true">
+                        <path
+                            d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                    </svg>
+                    GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow-1 d-flex align-items-center">
+        <div class="container py-5">
+            <div class="row justify-content-center text-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold mb-3">Chat with Wikipedia, on-device</h1>
+                    <p class="lead text-secondary mb-4">
+                        Ask questions in plain English and get grounded answers drawn from
+                        Wikipedia. Powered by Chrome's built-in Prompt API — the language
+                        model runs locally in your browser, no server round-trip required.
+                    </p>
+                    <p class="text-secondary mb-5">
+                        Each question is distilled into a Wikipedia search query, the top
+                        matching article is retrieved, and the model streams a response
+                        restricted to that article's content.
+                    </p>
+                    <a href="/chat/" class="btn btn-primary btn-lg px-4 py-2">
+                        Start chatting
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-top py-3 text-center text-secondary small">
+        <div class="container">
+            Built with
+            <a href="https://developer.chrome.com/docs/ai/prompt-api" target="_blank" rel="noreferrer"
+                class="link-secondary">Chrome Prompt API</a>
+            ·
+            <a href="https://wikitech.wikimedia.org/wiki/API_Portal/Deprecation#Core_API" target="_blank"
+                rel="noreferrer" class="link-secondary">Wikipedia REST API</a>
+            ·
+            <a href="https://getbootstrap.com/" target="_blank" rel="noreferrer" class="link-secondary">Bootstrap</a>
+        </div>
+    </footer>
+</body>
+
 </html>

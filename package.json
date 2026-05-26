@@ -19,5 +19,9 @@
 		"gh-pages": "^6.3.0",
 		"typescript": "^5.5.4",
 		"vite": "^5.4.0"
+	},
+	"dependencies": {
+		"dompurify": "^3.4.5",
+		"marked": "^18.0.4"
 	}
 }
