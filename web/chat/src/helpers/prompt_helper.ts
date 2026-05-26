@@ -25,13 +25,13 @@ declare global {
 	var LanguageModel: LanguageModelStatic | undefined;
 }
 
-export class PromptApi {
+export class PromptHelper {
 	static isSupported(): boolean {
 		return typeof globalThis.LanguageModel !== 'undefined';
 	}
 
 	static async createSession(systemPrompt: string): Promise<LanguageModelSession> {
-		if (PromptApi.isSupported() === false) {
+		if (PromptHelper.isSupported() === false) {
 			throw new Error('Prompt API (LanguageModel) is not available in this browser.');
 		}
 		const model = globalThis.LanguageModel as LanguageModelStatic;

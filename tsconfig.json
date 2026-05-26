@@ -15,5 +15,5 @@
 		"noEmit": true,
 		"useDefineForClassFields": true
 	},
-	"include": ["web/src", "vite.config.ts"]
+	"include": ["web/chat", "vite.config.ts"]
 }

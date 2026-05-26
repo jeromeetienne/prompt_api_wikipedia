@@ -1,8 +1,13 @@
-import { PromptApi } from './apis/prompt_api.js';
-import { WikipediaApi } from './apis/wikipedia_api.js';
+import { PromptHelper } from './helpers/prompt_helper.js';
+import { WikipediaHelper } from './helpers/wikipedia_helper.js';
 
 const SYSTEM_PROMPT =
 	'You are a helpful assistant that answers questions strictly from the provided Wikipedia article. If the article does not contain the answer, say so plainly.';
+
+const QUERY_SYSTEM_PROMPT =
+	'You convert a user question into a concise Wikipedia search query. ' +
+	'Respond with only the query — no quotes, no punctuation, no explanation. ' +
+	'Keep it under 10 words and focus on the main entity or topic.';
 
 /**
  * Entry point for the Wikipedia chat demo. Wires up the DOM, mediates
@@ -22,7 +27,7 @@ export class Main {
 		const submitEl = document.getElementById('submit') as HTMLButtonElement;
 
 		// Bail out with an in-page banner when the Prompt API is unavailable.
-		if (PromptApi.isSupported() === false) {
+		if (PromptHelper.isSupported() === false) {
 			bannerEl.hidden = false;
 			bannerEl.innerHTML =
 				'Chrome\'s Prompt API (<code>window.LanguageModel</code>) is not available in this browser. ' +
@@ -41,7 +46,7 @@ export class Main {
 			if (userInput.length === 0) {
 				return;
 			}
-			void Main.handleTurn(userInput, messagesEl, inputEl, submitEl);
+			void Main.processUserInput(userInput, messagesEl, inputEl, submitEl);
 		});
 	}
 
@@ -55,7 +60,7 @@ export class Main {
 	 * @param inputEl     - Text input, disabled during the turn.
 	 * @param submitEl    - Submit button, disabled during the turn.
 	 */
-	private static async handleTurn(
+	private static async processUserInput(
 		userInput: string,
 		messagesEl: HTMLElement,
 		inputEl: HTMLInputElement,
@@ -71,7 +76,7 @@ export class Main {
 		submitEl.disabled = true;
 
 		try {
-			await Main.ask(userInput, (chunk) => {
+			await Main.queryWikipedia(userInput, (chunk) => {
 				if (assistantEl.classList.contains('is-empty') === true) {
 					assistantEl.classList.remove('is-empty');
 				}
@@ -90,30 +95,60 @@ export class Main {
 	}
 
 	/**
-	 * Looks up the top Wikipedia search result for the query and streams a
-	 * grounded answer from the on-device Prompt API. Emits a fallback
+	 * Two-stage pipeline: first asks the Prompt API to distill the user's
+	 * question into a concise Wikipedia search query, then looks up the top
+	 * matching article and streams a grounded answer. Emits a fallback
 	 * message via `onChunk` when no article matches.
 	 *
-	 * @param query    - The user's question, used as both the search query
-	 *                   and the question shown to the model.
-	 * @param onChunk  - Invoked for each streamed text fragment (or once with
-	 *                   the fallback string when no article is found).
+	 * @param userInput  - The user's raw question. Used to derive the search
+	 *                     query and also passed verbatim to the answering model.
+	 * @param onChunk    - Invoked for each streamed text fragment, plus a
+	 *                     leading status hint with the generated search query.
 	 */
-	private static async ask(query: string, onChunk: (text: string) => void): Promise<void> {
-		const searchResults = await WikipediaApi.search(query, 1);
+	private static async queryWikipedia(userInput: string, onChunk: (text: string) => void): Promise<void> {
+		const searchQuery = await Main.generateSearchQuery(userInput);
+		console.log(`Generated search query: "${searchQuery}"`);
+		alert('sdfsdfsd')
+		onChunk(`Searching Wikipedia for: "${searchQuery}"\n\n`);
+
+		const searchResults = await WikipediaHelper.search(searchQuery, 1);
 		if (searchResults.length === 0) {
 			onChunk('No matching Wikipedia article was found for that question.');
 			return;
 		}
 
-		const article = await WikipediaApi.getSummary(searchResults[0].key);
-		const userPrompt = Main.buildPrompt(article.title, article.extract, query);
+		const article = await WikipediaHelper.getSummary(searchResults[0].key);
+		const userPrompt = Main.buildPrompt(article.title, article.extract, userInput);
 
-		const session = await PromptApi.createSession(SYSTEM_PROMPT);
+		const session = await PromptHelper.createSession(SYSTEM_PROMPT);
 		try {
-			for await (const chunk of PromptApi.streamPrompt(session, userPrompt)) {
+			for await (const chunk of PromptHelper.streamPrompt(session, userPrompt)) {
 				onChunk(chunk);
 			}
+		} finally {
+			session.destroy();
+		}
+	}
+
+	/**
+	 * Opens a short-lived Prompt API session to convert the user's natural
+	 * language question into a concise Wikipedia search query.
+	 *
+	 * @param userInput  - The user's raw question.
+	 * @returns The distilled query, or `userInput` if the model returns nothing.
+	 */
+	private static async generateSearchQuery(userInput: string): Promise<string> {
+		const session = await PromptHelper.createSession(QUERY_SYSTEM_PROMPT);
+		try {
+			let output = '';
+			for await (const chunk of PromptHelper.streamPrompt(session, userInput)) {
+				output += chunk;
+			}
+			const trimmed = output.trim();
+			if (trimmed.length === 0) {
+				return userInput;
+			}
+			return trimmed;
 		} finally {
 			session.destroy();
 		}
