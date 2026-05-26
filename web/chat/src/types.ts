@@ -6,6 +6,6 @@ export type WikipediaSearchResult = {
 
 export type WikipediaArticle = {
 	title: string;
-	extract: string;
+	summary: string;
 	url: string;
 };

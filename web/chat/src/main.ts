@@ -2,6 +2,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { PromptHelper, type LanguageModelSession } from './helpers/prompt_helper.js';
 import { WikipediaHelper } from './helpers/wikipedia_helper.js';
+import type { WikipediaArticle } from './types.js';
 
 const SYSTEM_PROMPT =
 	'You are a helpful assistant that answers questions strictly from the provided Wikipedia article. If the article does not contain the answer, say so plainly.';
@@ -10,6 +11,8 @@ const QUERY_SYSTEM_PROMPT =
 	'You convert a user question into a concise Wikipedia search query. ' +
 	'Respond with only the query — no quotes, no punctuation, no explanation. ' +
 	'Keep it under 10 words and focus on the main entity or topic.';
+
+const SEARCH_RESULT_LIMIT = 3;
 
 /**
  * Entry point for the Wikipedia chat demo. Wires up the DOM, mediates
@@ -138,15 +141,17 @@ export class Main {
 		console.log(`Generated search query: "${searchQuery}"`);
 		onStatus(`Searching Wikipedia for: "${searchQuery}"`);
 
-		const searchResults = await WikipediaHelper.search(searchQuery, 1);
+		const searchResults = await WikipediaHelper.search(searchQuery, SEARCH_RESULT_LIMIT);
 		if (searchResults.length === 0) {
 			onChunk('No matching Wikipedia article was found for that question.');
 			return;
 		}
-
-		const article = await WikipediaHelper.getSummary(searchResults[0].key);
-		const userPrompt = Main.buildPrompt(article.title, article.extract, userInput);
-
+		console.log('Search results:', searchResults);
+		const articles = await Promise.all(
+			searchResults.map((searchResult) => WikipediaHelper.getSummary(searchResult.key)),
+		);
+		const userPrompt = Main.buildPrompt(articles, userInput);
+		console.log('Constructed user prompt:', userPrompt);
 		for await (const chunk of PromptHelper.streamPrompt(session, userPrompt)) {
 			onChunk(chunk);
 		}
@@ -177,23 +182,25 @@ export class Main {
 	}
 
 	/**
-	 * Assembles the grounded user prompt: instructions, the Wikipedia
-	 * extract delimited as context, and the question.
+	 * Assembles the grounded user prompt: instructions, one delimited
+	 * Wikipedia extract per article as context, and the question.
 	 *
-	 * @param title    - Article title, shown in the delimiter for context.
-	 * @param extract  - Plain-text article body the model must rely on.
+	 * @param articles - Wikipedia articles the model must rely on.
 	 * @param query    - Original user question.
 	 * @returns The fully formatted prompt string to send to the model.
 	 */
-	private static buildPrompt(title: string, extract: string, query: string): string {
+	private static buildPrompt(articles: WikipediaArticle[], query: string): string {
+		const articleBlocks = articles.flatMap((article) => [
+			`--- Wikipedia: ${article.title} ---`,
+			article.summary,
+			'---',
+			'',
+		]);
 		return [
 			'Answer the user\'s question using only the Wikipedia content below.',
 			'If the content does not contain the answer, say so.',
 			'',
-			`--- Wikipedia: ${title} ---`,
-			extract,
-			'---',
-			'',
+			...articleBlocks,
 			`Question: ${query}`,
 		].join('\n');
 	}

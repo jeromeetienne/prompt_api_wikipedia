@@ -53,7 +53,7 @@ export class WikipediaHelper {
 		const summaryResponse = (await response.json()) as SummaryResponse;
 		return {
 			title: summaryResponse.title,
-			extract: summaryResponse.extract,
+			summary: summaryResponse.extract,
 			url: summaryResponse.content_urls?.desktop?.page ?? `https://en.wikipedia.org/wiki/${encodeURIComponent(key)}`,
 		};
 	}

@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat with Wikipedia</title>
+    <!-- Script to apply dark mode based on system preference -->
     <script>
         (function () {
             var mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -15,14 +16,20 @@
             mq.addEventListener('change', apply);
         })();
     </script>
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+
+    <!-- Bootstrap icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 </head>
 
 <body class="d-flex flex-column min-vh-100">
+    <!-- Navigation bar -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" style="min-height: 57px;">
         <div class="container" style="max-width: 780px;">
             <a class="navbar-brand fw-semibold" href="/">Chat with Wikipedia</a>
+            <!-- GitHub link -->
             <div class="ms-auto">
                 <a class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
                     href="https://github.com/jeromeetienne/prompt_api_wikipedia" target="_blank" rel="noreferrer">
@@ -37,6 +44,7 @@
         </div>
     </nav>
 
+    <!-- Hero section with title, description, and CTA -->
     <main class="flex-grow-1 d-flex align-items-center">
         <div class="container py-5">
             <div class="row justify-content-center text-center">
@@ -47,19 +55,28 @@
                         Wikipedia. Powered by Chrome's built-in Prompt API — the language
                         model runs locally in your browser, no server round-trip required.
                     </p>
-                    <p class="text-secondary mb-5">
-                        Each question is distilled into a Wikipedia search query, the top
-                        matching article is retrieved, and the model streams a response
-                        restricted to that article's content.
-                    </p>
+                    <!-- Call to action button -->
                     <a href="/chat/" class="btn btn-primary btn-lg px-4 py-2">
-                        Start chatting
+                        Start Chatting
                     </a>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- Footer attribution -->
+    <div class="position-fixed bottom-0 start-0 p-3">
+        <small>
+            Made with
+            <i class="bi bi-heart-fill text-danger"></i>
+            by
+            <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank">
+                Jerome Etienne
+            </a>
+        </small>
+    </div>
+
+    <!-- Footer with credits and links -->
     <footer class="border-top py-3 text-center text-secondary small">
         <div class="container">
             Built with
