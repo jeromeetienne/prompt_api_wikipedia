@@ -1,4 +1,4 @@
-import type { WikipediaArticle, WikipediaHit } from './types.js';
+import type { WikipediaArticle, WikipediaSearchResult } from '../types.js';
 
 type SearchResponse = {
 	pages: Array<{
@@ -16,8 +16,8 @@ type SummaryResponse = {
 	};
 };
 
-export class Wikipedia {
-	static async search(query: string, limit = 3): Promise<WikipediaHit[]> {
+export class WikipediaApi {
+	static async search(query: string, limit = 3): Promise<WikipediaSearchResult[]> {
 		const url = `https://en.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(query)}&limit=${limit}`;
 		const res = await fetch(url);
 		if (res.ok === false) {

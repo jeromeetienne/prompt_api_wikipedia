@@ -1,4 +1,4 @@
-export type WikipediaHit = {
+export type WikipediaSearchResult = {
 	key: string;
 	title: string;
 	description: string | null;
