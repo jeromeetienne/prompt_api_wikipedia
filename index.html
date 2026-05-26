@@ -1,45 +1,94 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Talk with Wikipedia</title>
-		<link
-			rel="stylesheet"
-			href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-			integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-			crossorigin="anonymous"
-		/>
-		<script type="module" crossorigin src="/prompt_api_wikipedia/assets/index-B6_rGpU3.js"></script>
-		<link rel="stylesheet" crossorigin href="/prompt_api_wikipedia/assets/index-7dN0zzDD.css">
-	</head>
-	<body class="d-flex flex-column vh-100">
-		<div class="container py-3 d-flex flex-column flex-grow-1" style="max-width: 780px;">
-			<header class="mb-2">
-				<h1 class="h4 mb-1">Talk with Wikipedia</h1>
-				<p class="text-secondary small mb-0">Chrome Prompt API + Wikipedia RAG demo</p>
-			</header>
+<html lang="en">
 
-			<div id="banner" class="alert alert-warning small mb-2" role="alert" hidden></div>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat with Wikipedia</title>
+    <!-- Script to apply dark mode based on system preference -->
+    <script>
+        (function () {
+            var mq = window.matchMedia('(prefers-color-scheme: dark)');
+            var apply = function () {
+                document.documentElement.setAttribute('data-bs-theme', mq.matches ? 'dark' : 'light');
+            };
+            apply();
+            mq.addEventListener('change', apply);
+        })();
+    </script>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
 
-			<main
-				id="messages"
-				class="flex-grow-1 overflow-auto d-flex flex-column gap-2 py-3"
-				aria-live="polite"
-			></main>
+    <!-- Bootstrap icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
 
-			<form id="form" class="d-flex gap-2 pb-3 pt-2 bg-body sticky-bottom">
-				<input
-					id="input"
-					class="form-control"
-					type="text"
-					placeholder="Ask a question about anything on Wikipedia…"
-					autocomplete="off"
-					required
-				/>
-				<button id="submit" class="btn btn-primary" type="submit">Ask</button>
-			</form>
-		</div>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Navigation bar -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" style="min-height: 57px;">
+        <div class="container" style="max-width: 780px;">
+            <a class="navbar-brand fw-semibold" href="/">Chat with Wikipedia</a>
+            <!-- GitHub link -->
+            <div class="ms-auto">
+                <a class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+                    href="https://github.com/jeromeetienne/prompt_api_wikipedia" target="_blank" rel="noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16"
+                        fill="currentColor" aria-hidden="true">
+                        <path
+                            d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                    </svg>
+                    GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
 
-	</body>
+    <!-- Hero section with title, description, and CTA -->
+    <main class="flex-grow-1 d-flex align-items-center">
+        <div class="container py-5">
+            <div class="row justify-content-center text-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold mb-3">Chat with Wikipedia, on-device</h1>
+                    <p class="lead text-secondary mb-4">
+                        Ask questions in plain English and get grounded answers drawn from
+                        Wikipedia. Powered by Chrome's built-in Prompt API — the language
+                        model runs locally in your browser, no server round-trip required.
+                    </p>
+                    <!-- Call to action button -->
+                    <a href="/chat/" class="btn btn-primary btn-lg px-4 py-2">
+                        Start Chatting
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer attribution -->
+    <div class="position-fixed bottom-0 start-0 p-3">
+        <small>
+            Made with
+            <i class="bi bi-heart-fill text-danger"></i>
+            by
+            <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank">
+                Jerome Etienne
+            </a>
+        </small>
+    </div>
+
+    <!-- Footer with credits and links -->
+    <footer class="border-top py-3 text-center text-secondary small">
+        <div class="container">
+            Built with
+            <a href="https://developer.chrome.com/docs/ai/prompt-api" target="_blank" rel="noreferrer"
+                class="link-secondary">Chrome Prompt API</a>
+            ·
+            <a href="https://wikitech.wikimedia.org/wiki/API_Portal/Deprecation#Core_API" target="_blank"
+                rel="noreferrer" class="link-secondary">Wikipedia REST API</a>
+            ·
+            <a href="https://getbootstrap.com/" target="_blank" rel="noreferrer" class="link-secondary">Bootstrap</a>
+        </div>
+    </footer>
+</body>
+
 </html>
