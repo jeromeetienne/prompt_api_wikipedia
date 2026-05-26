@@ -4,8 +4,16 @@ import { PromptHelper, type LanguageModelSession } from './helpers/prompt_helper
 import { WikipediaHelper } from './helpers/wikipedia_helper.js';
 import type { WikipediaArticle } from './types.js';
 
-const SYSTEM_PROMPT =
-	'You are a helpful assistant that answers questions strictly from the provided Wikipedia article. If the article does not contain the answer, say so plainly.';
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//	
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+
+const MAIN_SYSTEM_PROMPT =
+	'You are a helpful assistant that answers questions strictly from the provided Wikipedia article. ' +
+	'If the article does not contain the answer, say so plainly.';
 
 const QUERY_SYSTEM_PROMPT =
 	'You convert a user question into a concise Wikipedia search query. ' +
@@ -13,6 +21,13 @@ const QUERY_SYSTEM_PROMPT =
 	'Keep it under 10 words and focus on the main entity or topic.';
 
 const SEARCH_RESULT_LIMIT = 3;
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//	
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * Entry point for the Wikipedia chat demo. Wires up the DOM, mediates
@@ -87,7 +102,7 @@ export class Main {
 		submitEl.disabled = true;
 
 		if (Main.chatSession === null) {
-			Main.chatSession = await PromptHelper.createSession(SYSTEM_PROMPT);
+			Main.chatSession = await PromptHelper.createSession(MAIN_SYSTEM_PROMPT);
 		}
 
 		let accumulated = '';
