@@ -3,81 +3,88 @@ import { PromptApi } from './prompt-api.js';
 
 export class Main {
 	static init(): void {
-		const banner = document.getElementById('banner') as HTMLDivElement;
-		const messages = document.getElementById('messages') as HTMLElement;
-		const form = document.getElementById('form') as HTMLFormElement;
-		const input = document.getElementById('input') as HTMLInputElement;
-		const submit = document.getElementById('submit') as HTMLButtonElement;
+		// Cache DOM references used by init and event handlers.
+		const bannerEl = document.getElementById('banner') as HTMLDivElement;
+		const messagesEl = document.getElementById('messages') as HTMLElement;
+		const formEl = document.getElementById('form') as HTMLFormElement;
+		const inputEl = document.getElementById('input') as HTMLInputElement;
+		const submitEl = document.getElementById('submit') as HTMLButtonElement;
 
+		// Bail out with an in-page banner when the Prompt API is unavailable.
 		if (PromptApi.isSupported() === false) {
-			banner.hidden = false;
-			banner.innerHTML =
+			bannerEl.hidden = false;
+			bannerEl.innerHTML =
 				'Chrome\'s Prompt API (<code>window.LanguageModel</code>) is not available in this browser. ' +
 				'Open this page in Chrome with the Prompt API enabled — see ' +
 				'<a href="https://developer.chrome.com/docs/ai/prompt-api" target="_blank" rel="noreferrer">' +
 				'developer.chrome.com/docs/ai/prompt-api</a>.';
-			input.disabled = true;
-			submit.disabled = true;
+			inputEl.disabled = true;
+			submitEl.disabled = true;
 			return;
 		}
 
-		form.addEventListener('submit', (event) => {
+		// Wire the chat form: submit a turn, then stream the answer.
+		formEl.addEventListener('submit', (event) => {
 			event.preventDefault();
-			const query = input.value.trim();
+			const query = inputEl.value.trim();
 			if (query.length === 0) {
 				return;
 			}
-			void Main.handleTurn(query, messages, input, submit);
+			void Main.handleTurn(query, messagesEl, inputEl, submitEl);
 		});
 	}
 
+	// Run one user turn: append bubbles, stream the assistant reply, restore input state.
 	private static async handleTurn(
 		query: string,
-		messages: HTMLElement,
-		input: HTMLInputElement,
-		submit: HTMLButtonElement,
+		messagesEl: HTMLElement,
+		inputEl: HTMLInputElement,
+		submitEl: HTMLButtonElement,
 	): Promise<void> {
-		Main.appendBubble(messages, 'user', query);
-		const assistant = Main.appendBubble(messages, 'assistant', '');
-		assistant.classList.add('is-empty');
+		Main.appendBubble(messagesEl, 'user', query);
+		// Start the assistant bubble in an "empty" state until the first chunk arrives.
+		const assistantEl = Main.appendBubble(messagesEl, 'assistant', '');
+		assistantEl.classList.add('is-empty');
 
-		input.value = '';
-		input.disabled = true;
-		submit.disabled = true;
+		inputEl.value = '';
+		inputEl.disabled = true;
+		submitEl.disabled = true;
 
 		try {
 			await Chat.ask(query, (chunk) => {
-				if (assistant.classList.contains('is-empty') === true) {
-					assistant.classList.remove('is-empty');
+				if (assistantEl.classList.contains('is-empty') === true) {
+					assistantEl.classList.remove('is-empty');
 				}
-				assistant.textContent = (assistant.textContent ?? '') + chunk;
-				messages.scrollTop = messages.scrollHeight;
+				assistantEl.textContent = (assistantEl.textContent ?? '') + chunk;
+				messagesEl.scrollTop = messagesEl.scrollHeight;
 			});
 		} catch (err) {
-			assistant.classList.remove('is-empty');
+			assistantEl.classList.remove('is-empty');
 			const message = err instanceof Error ? err.message : String(err);
-			assistant.textContent = `Error: ${message}`;
+			assistantEl.textContent = `Error: ${message}`;
 		} finally {
-			input.disabled = false;
-			submit.disabled = false;
-			input.focus();
+			inputEl.disabled = false;
+			submitEl.disabled = false;
+			inputEl.focus();
 		}
 	}
 
+	// Create a chat bubble for the given role and append it to the message list.
 	private static appendBubble(
-		messages: HTMLElement,
+		messagesEl: HTMLElement,
 		role: 'user' | 'assistant',
 		text: string,
 	): HTMLDivElement {
-		const el = document.createElement('div');
-		el.className = `bubble bubble--${role}`;
-		el.textContent = text;
-		messages.appendChild(el);
-		messages.scrollTop = messages.scrollHeight;
-		return el;
+		const bubbleEl = document.createElement('div');
+		bubbleEl.className = `bubble bubble--${role}`;
+		bubbleEl.textContent = text;
+		messagesEl.appendChild(bubbleEl);
+		messagesEl.scrollTop = messagesEl.scrollHeight;
+		return bubbleEl;
 	}
 }
 
+// Boot Main.init once the DOM is parsed.
 if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', () => Main.init());
 } else {
