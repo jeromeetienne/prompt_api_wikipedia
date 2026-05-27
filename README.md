@@ -8,11 +8,12 @@ A serverless AI chatbot grounded in Wikipedia, powered by Chrome's built-in [Pro
 
 Each turn runs a small RAG pipeline entirely in the browser:
 
-1. Your question is distilled into a concise Wikipedia search query by a short-lived Prompt API session.
-2. The Wikipedia [REST search endpoint](https://en.wikipedia.org/w/rest.php/v1/search/page) returns the top matching articles.
-3. Each article's summary is fetched from `https://en.wikipedia.org/api/rest_v1/page/summary/{key}`.
-4. A grounded prompt (instructions + delimited article extracts + your question) is streamed through a persistent Prompt API session so the model keeps conversation history.
-5. The streamed answer is rendered as Markdown (via `marked`) and sanitized (via `dompurify`) before being injected into the chat bubble.
+1. The recent user messages are passed to Chrome's `LanguageDetector` to pick which Wikipedia to query — falls back to `en` if the API is unavailable or confidence is low.
+2. Your question is distilled into a concise Wikipedia search query (in the same language) by a short-lived Prompt API session.
+3. The Wikipedia [REST search endpoint](https://en.wikipedia.org/w/rest.php/v1/search/page) at `https://{lang}.wikipedia.org/w/rest.php/v1/search/page` returns the top matching articles.
+4. Each article's summary is fetched from `https://{lang}.wikipedia.org/api/rest_v1/page/summary/{key}`.
+5. A grounded prompt (instructions + delimited article extracts + your question) is streamed through a persistent Prompt API session so the model keeps conversation history.
+6. The streamed answer is rendered as Markdown (via `marked`) and sanitized (via `dompurify`) before being injected into the chat bubble.
 
 For a longer walk-through of the design choices behind this pipeline, see [docs/chat-with-wikipedia.article.md](docs/chat-with-wikipedia.article.md).
 
@@ -46,6 +47,7 @@ The build uses Vite's `base: './'` so the output works under any subpath, includ
 - [`dompurify`](https://github.com/cure53/DOMPurify) for sanitizing model output
 - [Wikipedia REST API](https://en.wikipedia.org/api/rest_v1/) (search + summary)
 - [Chrome Prompt API](https://developer.chrome.com/docs/ai/prompt-api) (`window.LanguageModel`)
+- [Chrome Language Detector API](https://developer.chrome.com/docs/ai/language-detection) (`window.LanguageDetector`) — optional; falls back to English
 
 ## Project layout
 
@@ -58,8 +60,9 @@ web/
         ├── main.ts       # entry — wires DOM, runs the per-turn pipeline
         ├── types.ts      # shared shapes
         └── helpers/
-            ├── prompt_helper.ts     # Prompt API session + streaming
-            └── wikipedia_helper.ts  # Wikipedia REST search + summary
+            ├── prompt_helper.ts             # Prompt API session + streaming
+            ├── language_detector_helper.ts  # Chrome LanguageDetector wrapper
+            └── wikipedia_helper.ts          # Wikipedia REST search + summary
 vite.config.ts            # Vite multi-entry build, base './'
 ```
 
