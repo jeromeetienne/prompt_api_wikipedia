@@ -2,7 +2,7 @@
 
 A serverless AI chatbot grounded in Wikipedia, powered by Chrome's built-in [Prompt API](https://developer.chrome.com/docs/ai/prompt-api) — your questions never leave your browser.
 
-**Live demo:** <https://jeromeetienne.github.io/prompt_api_wikipedia/>
+**Live demo:** <https://jeromeetienne.github.io/ondevice_wikipedia_chat/>
 
 ## What it does
 
@@ -13,6 +13,8 @@ Each turn runs a small RAG pipeline entirely in the browser:
 3. Each article's summary is fetched from `https://en.wikipedia.org/api/rest_v1/page/summary/{key}`.
 4. A grounded prompt (instructions + delimited article extracts + your question) is streamed through a persistent Prompt API session so the model keeps conversation history.
 5. The streamed answer is rendered as Markdown (via `marked`) and sanitized (via `dompurify`) before being injected into the chat bubble.
+
+For a longer walk-through of the design choices behind this pipeline, see [docs/chat-with-wikipedia.article.md](docs/chat-with-wikipedia.article.md).
 
 ## Requirements
 
@@ -34,7 +36,7 @@ npm run build    # tsc + vite build, output to dist/
 npm run deploy   # publishes dist/ to gh-pages (predeploy runs build)
 ```
 
-The build uses Vite's `base: './'` so the output works under any subpath, including `/prompt_api_wikipedia/` on GitHub Pages.
+The build uses Vite's `base: './'` so the output works under any subpath, including `/ondevice_wikipedia_chat/` on GitHub Pages.
 
 ## Tech stack
 
