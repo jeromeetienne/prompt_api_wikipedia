@@ -2,6 +2,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { PromptHelper, type LanguageModelMessage, type LanguageModelSession } from './helpers/prompt_helper.js';
 import { WikipediaHelper } from './helpers/wikipedia_helper.js';
+import { LanguageDetectorHelper } from './helpers/language_detector_helper.js';
 import type { WikipediaArticle } from './types.js';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -17,6 +18,7 @@ const MAIN_SYSTEM_PROMPT = [
 	'On every turn you receive one or more Wikipedia article excerpts wrapped in <article title="…"> tags, followed by the user\'s question wrapped in <question>…</question>. Answer the question using only the content of those <article> tags for the current turn. If the answer is not in the provided articles, say so plainly in one sentence — do not guess and do not fall back on outside knowledge.',
 	'',
 	'Output rules:',
+	'- Respond in the same language as the user\'s question. The article excerpts you receive are already from the matching-language Wikipedia.',
 	'- Respond in GitHub-flavoured Markdown. Use short paragraphs, **bold** for key terms, and bullet lists when comparing items. Do not wrap the whole reply in a code block.',
 	'- Keep answers concise: 1–3 short paragraphs, or up to ~150 words, unless the user explicitly asks for more detail.',
 	'- Cite the source article inline as *(from "Article Title")* the first time you draw on it.',
@@ -30,6 +32,7 @@ const QUERY_SYSTEM_PROMPT = [
 	'',
 	'Rules:',
 	'- Output ONLY the query. No quotes, no trailing punctuation, no prefix like "Query:", no explanation.',
+	'- Output the query in the same language as the user\'s last message (e.g. French question → French query). This is used to search the matching-language Wikipedia.',
 	'- Maximum 8 words. Prefer 2–4.',
 	'- Use the recent conversation to resolve pronouns and follow-ups. If the user says "its capital" after discussing France, return "France capital", not "its capital".',
 	'- If the user is clearly continuing the same topic, keep the same primary entity.',
@@ -180,11 +183,14 @@ export class Main {
 		onStatus: (text: string) => void,
 		onChunk: (accumulated: string) => void,
 	): Promise<string> {
+		const lang = await Main.detectChatLanguage();
+		console.log(`Detected chat language: "${lang}"`);
+
 		const searchQuery = await Main.generateSearchQuery(userInput);
 		console.log(`Generated search query: "${searchQuery}"`);
-		onStatus(`Searching Wikipedia for: "${searchQuery}"`);
+		onStatus(`Searching ${Main.languageNameOf(lang)} Wikipedia for: "${searchQuery}"`);
 
-		const searchResults = await WikipediaHelper.search(searchQuery, SEARCH_RESULT_LIMIT);
+		const searchResults = await WikipediaHelper.search(searchQuery, SEARCH_RESULT_LIMIT, lang);
 		if (searchResults.length === 0) {
 			const fallback = 'No matching Wikipedia article was found for that question.';
 			onChunk(fallback);
@@ -192,7 +198,7 @@ export class Main {
 		}
 		console.log('Search results:', searchResults);
 		const articles = await Promise.all(
-			searchResults.map((searchResult) => WikipediaHelper.getSummary(searchResult.key)),
+			searchResults.map((searchResult) => WikipediaHelper.getSummary(searchResult.key, lang)),
 		);
 		const userPrompt = Main.buildPrompt(articles, userInput);
 		console.log('Constructed user prompt:', userPrompt);
@@ -217,6 +223,44 @@ export class Main {
 			onChunk(accumulated);
 		}
 		return accumulated;
+	}
+
+	/**
+	 * Detects the language of the current conversation by feeding the last few
+	 * user messages to Chrome's on-device LanguageDetector. Concatenating recent
+	 * turns keeps short follow-ups ("et sa hauteur ?") detectable. Falls back to
+	 * "en" when the detector is unavailable or confidence is too low — so the
+	 * app behaves exactly as before for users on browsers without the API.
+	 */
+	/**
+	 * Converts an ISO 639-1 language code (e.g. "fr") into a human-readable
+	 * English name (e.g. "French") for display in the status pill. Falls back
+	 * to the raw code if Intl.DisplayNames can't resolve it.
+	 */
+	private static languageNameOf(lang: string): string {
+		try {
+			const names = new Intl.DisplayNames(['en'], { type: 'language' });
+			const name = names.of(lang);
+			return name ?? lang;
+		} catch {
+			return lang;
+		}
+	}
+
+	private static async detectChatLanguage(): Promise<string> {
+		const recentUserMessages = Main.history
+			.filter((message) => message.role === 'user')
+			.slice(-3)
+			.map((message) => message.content);
+		if (recentUserMessages.length === 0) {
+			return 'en';
+		}
+		const detectionInput = recentUserMessages.join('\n');
+		const detected = await LanguageDetectorHelper.detectTopLanguage(detectionInput);
+		if (detected === null) {
+			return 'en';
+		}
+		return detected;
 	}
 
 	/**
