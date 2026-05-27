@@ -3,10 +3,21 @@ type LanguageModelMessage = {
 	content: string;
 };
 
+type LanguageModelAvailability = 'available' | 'downloadable' | 'downloading' | 'unavailable';
+
+type DownloadProgressEvent = {
+	loaded: number;
+};
+
+type CreateMonitor = {
+	addEventListener(type: 'downloadprogress', listener: (event: DownloadProgressEvent) => void): void;
+};
+
 type LanguageModelCreateOptions = {
 	initialPrompts?: LanguageModelMessage[];
 	temperature?: number;
 	topK?: number;
+	monitor?: (m: CreateMonitor) => void;
 };
 
 type LanguageModelSession = {
@@ -16,7 +27,7 @@ type LanguageModelSession = {
 };
 
 type LanguageModelStatic = {
-	availability(): Promise<'available' | 'downloadable' | 'downloading' | 'unavailable'>;
+	availability(): Promise<LanguageModelAvailability>;
 	create(options?: LanguageModelCreateOptions): Promise<LanguageModelSession>;
 };
 
@@ -30,12 +41,31 @@ export class PromptHelper {
 		return typeof globalThis.LanguageModel !== 'undefined';
 	}
 
-	static async createSession(options: LanguageModelCreateOptions): Promise<LanguageModelSession> {
+	static async availability(): Promise<LanguageModelAvailability> {
+		if (PromptHelper.isSupported() === false) {
+			return 'unavailable';
+		}
+		const model = globalThis.LanguageModel as LanguageModelStatic;
+		return await model.availability();
+	}
+
+	static async createSession(
+		options: LanguageModelCreateOptions,
+		onDownloadProgress?: (loaded: number) => void,
+	): Promise<LanguageModelSession> {
 		if (PromptHelper.isSupported() === false) {
 			throw new Error('Prompt API (LanguageModel) is not available in this browser.');
 		}
 		const model = globalThis.LanguageModel as LanguageModelStatic;
-		return await model.create(options);
+		const createOptions: LanguageModelCreateOptions = { ...options };
+		if (onDownloadProgress !== undefined) {
+			createOptions.monitor = (m) => {
+				m.addEventListener('downloadprogress', (event) => {
+					onDownloadProgress(event.loaded);
+				});
+			};
+		}
+		return await model.create(createOptions);
 	}
 
 	static async *streamPrompt(
@@ -60,4 +90,4 @@ export class PromptHelper {
 	}
 }
 
-export type { LanguageModelMessage, LanguageModelSession };
+export type { LanguageModelMessage, LanguageModelSession, LanguageModelAvailability };

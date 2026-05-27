@@ -157,7 +157,7 @@ export class Main {
 				userInput,
 				(statusText) => {
 					Main.insertStatusBubbleUi(messagesEl, assistantEl, statusText);
-					window.scrollTo(0, document.documentElement.scrollHeight);
+					window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
 				},
 				(chunk) => {
 					if (assistantEl.dataset.state === 'pending') {
@@ -165,13 +165,13 @@ export class Main {
 					}
 					const rendered = marked.parse(chunk.trimEnd(), { async: false }) as string;
 					assistantEl.innerHTML = DOMPurify.sanitize(rendered);
-					window.scrollTo(0, document.documentElement.scrollHeight);
+					window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
 				},
 			);
 			accumulated = result.text;
 			if (result.articles.length > 0) {
 				Main.appendSourcesFooterUi(assistantEl, result.articles);
-				window.scrollTo(0, document.documentElement.scrollHeight);
+				window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
 			}
 			Main.history.push({ role: 'assistant', content: accumulated });
 			Main.pruneHistory();
@@ -451,7 +451,7 @@ export class Main {
 		bubbleEl.style.wordWrap = 'break-word';
 		bubbleEl.textContent = text;
 		messagesEl.appendChild(bubbleEl);
-		window.scrollTo(0, document.documentElement.scrollHeight);
+		window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
 		return bubbleEl;
 	}
 
