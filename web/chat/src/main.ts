@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify';
 import { PromptHelper, type LanguageModelMessage, type LanguageModelSession } from './helpers/prompt_helper.js';
 import { WikipediaHelper } from './helpers/wikipedia_helper.js';
 import { LanguageDetectorHelper } from './helpers/language_detector_helper.js';
+import { SpeechRecognitionHelper } from './helpers/speech_recognition_helper.js';
 import type { WikipediaArticle } from './types.js';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,6 +70,8 @@ const HISTORY_MAX_TURNS = 12;
 export class Main {
 	private static chatSession: LanguageModelSession | null = null;
 	private static history: LanguageModelMessage[] = [];
+	private static currentRecognition: SpeechRecognitionHelper | null = null;
+	private static lastDetectedLanguage: string | null = null;
 
 	/**
 	 * Bootstraps the chat UI: caches DOM references, gates on Prompt API
@@ -81,6 +84,7 @@ export class Main {
 		const inputEl = document.getElementById('input') as HTMLInputElement;
 		const submitEl = document.getElementById('submit') as HTMLButtonElement;
 		const newChatEl = document.getElementById('new-chat') as HTMLButtonElement;
+		const micEl = document.getElementById('mic') as HTMLButtonElement;
 
 		if (PromptHelper.isSupported() === false) {
 			bannerEl.hidden = false;
@@ -97,6 +101,11 @@ export class Main {
 
 		formEl.addEventListener('submit', (event) => {
 			event.preventDefault();
+			if (Main.currentRecognition !== null) {
+				Main.currentRecognition.abort();
+				Main.currentRecognition = null;
+				Main.resetMicButtonUi(micEl);
+			}
 			const userInput = inputEl.value.trim();
 			if (userInput.length === 0) {
 				return;
@@ -104,7 +113,12 @@ export class Main {
 			void Main.processUserInput(userInput, messagesEl, inputEl, submitEl);
 		});
 
-		newChatEl.addEventListener('click', () => Main.resetChat(messagesEl, inputEl));
+		newChatEl.addEventListener('click', () => Main.resetChat(messagesEl, inputEl, micEl));
+
+		if (SpeechRecognitionHelper.isSupported() === true) {
+			micEl.hidden = false;
+			micEl.addEventListener('click', () => Main.toggleMic(micEl, inputEl));
+		}
 	}
 
 	/**
@@ -260,7 +274,60 @@ export class Main {
 		if (detected === null) {
 			return 'en';
 		}
+		Main.lastDetectedLanguage = detected;
 		return detected;
+	}
+
+	/**
+	 * Toggles speech-to-text recording. When idle, opens a SpeechRecognition
+	 * session in the conversation's detected language (or navigator.language on
+	 * turn 1) and streams its interim transcript into the input field. When
+	 * already recording, stops gracefully — the onEnd handler clears state and
+	 * restores the button. The user reviews the transcript and clicks Ask as
+	 * usual; we never auto-submit.
+	 */
+	private static toggleMic(micEl: HTMLButtonElement, inputEl: HTMLInputElement): void {
+		if (Main.currentRecognition !== null) {
+			Main.currentRecognition.stop();
+			return;
+		}
+		const lang = Main.lastDetectedLanguage ?? navigator.language;
+		const recognition = new SpeechRecognitionHelper({ lang });
+		Main.currentRecognition = recognition;
+		Main.applyMicButtonRecordingUi(micEl);
+		recognition.start({
+			onTranscript: (transcript) => {
+				inputEl.value = transcript;
+			},
+			onError: (error) => {
+				console.warn('Speech recognition error:', error);
+			},
+			onEnd: () => {
+				Main.currentRecognition = null;
+				Main.resetMicButtonUi(micEl);
+				inputEl.focus();
+			},
+		});
+	}
+
+	private static applyMicButtonRecordingUi(micEl: HTMLButtonElement): void {
+		micEl.classList.remove('btn-outline-secondary');
+		micEl.classList.add('btn-danger');
+		micEl.title = 'Stop recording';
+		const iconEl = micEl.querySelector('i');
+		if (iconEl !== null) {
+			iconEl.className = 'bi bi-stop-fill';
+		}
+	}
+
+	private static resetMicButtonUi(micEl: HTMLButtonElement): void {
+		micEl.classList.remove('btn-danger');
+		micEl.classList.add('btn-outline-secondary');
+		micEl.title = 'Speak your question';
+		const iconEl = micEl.querySelector('i');
+		if (iconEl !== null) {
+			iconEl.className = 'bi bi-mic-fill';
+		}
 	}
 
 	/**
@@ -334,11 +401,17 @@ export class Main {
 	 * Tears down the current session and clears the on-screen transcript so
 	 * the user can start over.
 	 */
-	private static resetChat(messagesEl: HTMLElement, inputEl: HTMLInputElement): void {
+	private static resetChat(messagesEl: HTMLElement, inputEl: HTMLInputElement, micEl: HTMLButtonElement): void {
 		Main.history = [];
+		Main.lastDetectedLanguage = null;
 		if (Main.chatSession !== null) {
 			Main.chatSession.destroy();
 			Main.chatSession = null;
+		}
+		if (Main.currentRecognition !== null) {
+			Main.currentRecognition.abort();
+			Main.currentRecognition = null;
+			Main.resetMicButtonUi(micEl);
 		}
 		messagesEl.replaceChildren();
 		inputEl.value = '';
