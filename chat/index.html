@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <style>
         body {
-            height: 100dvh;
+            min-height: 100dvh;
         }
 
         .markdown-bubble> :first-child {
@@ -52,24 +52,32 @@
             border-radius: 0.25rem;
         }
     </style>
-  <script type="module" crossorigin src="../assets/chat-B5WJ_q5e.js"></script>
+  <script type="module" crossorigin src="../assets/chat-dEbLhRpK.js"></script>
 </head>
 
 <body class="d-flex flex-column bg-body">
-    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" style="min-height: 57px;">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top" style="min-height: 57px;">
         <div class="container d-flex justify-content-between align-items-center" style="max-width: 780px;">
             <a class="navbar-brand fw-semibold mb-0 fs-5" href="../">On-Device Wikipedia Chat</a>
-            <button id="new-chat" type="button" class="btn btn-outline-secondary btn-sm" title="Start a new chat">
-                <i class="bi bi-plus-lg"></i>
-                <span class="d-none d-sm-inline ms-1">New chat</span>
-            </button>
+            <div class="d-flex gap-2">
+                <a id="github" class="btn btn-outline-secondary btn-sm"
+                    href="https://github.com/jeromeetienne/ondevice_wikipedia_chat" target="_blank" rel="noreferrer"
+                    title="View source on GitHub">
+                    <i class="bi bi-github"></i>
+                    <span class="d-none d-sm-inline ms-1">GitHub</span>
+                </a>
+                <button id="new-chat" type="button" class="btn btn-outline-secondary btn-sm" title="Start a new chat">
+                    <i class="bi bi-plus-lg"></i>
+                    <span class="d-none d-sm-inline ms-1">New chat</span>
+                </button>
+            </div>
         </div>
     </nav>
 
-    <div class="container d-flex flex-column flex-grow-1 overflow-hidden" style="max-width: 780px;">
+    <div class="container d-flex flex-column flex-grow-1" style="max-width: 780px;">
         <div id="banner" class="alert alert-warning small mt-3 mb-0" role="alert" hidden></div>
 
-        <main id="messages" class="flex-grow-1 overflow-auto d-flex flex-column gap-3 py-3" aria-live="polite"></main>
+        <main id="messages" class="flex-grow-1 d-flex flex-column gap-3 py-3" aria-live="polite"></main>
 
         <form id="form" class="pt-2 pb-2 bg-body sticky-bottom">
             <div class="input-group input-group-lg shadow-sm">
