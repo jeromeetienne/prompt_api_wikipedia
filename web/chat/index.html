@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat with Wikipedia</title>
+    <title>On-Device Wikipedia Chat</title>
     <!-- Theme detection: Apply dark/light theme based on system preference -->
     <script>
         (function () {
@@ -56,10 +56,12 @@
 
 <body class="d-flex flex-column bg-body">
     <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" style="min-height: 57px;">
-        <div class="container" style="max-width: 780px;">
-            <div>
-                <a class="navbar-brand fw-semibold mb-0 fs-5" href="../">Chat with Wikipedia</a>
-            </div>
+        <div class="container d-flex justify-content-between align-items-center" style="max-width: 780px;">
+            <a class="navbar-brand fw-semibold mb-0 fs-5" href="../">On-Device Wikipedia Chat</a>
+            <button id="new-chat" type="button" class="btn btn-outline-secondary btn-sm" title="Start a new chat">
+                <i class="bi bi-plus-lg"></i>
+                <span class="d-none d-sm-inline ms-1">New chat</span>
+            </button>
         </div>
     </nav>
 

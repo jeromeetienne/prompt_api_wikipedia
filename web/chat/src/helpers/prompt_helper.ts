@@ -30,14 +30,12 @@ export class PromptHelper {
 		return typeof globalThis.LanguageModel !== 'undefined';
 	}
 
-	static async createSession(systemPrompt: string): Promise<LanguageModelSession> {
+	static async createSession(options: LanguageModelCreateOptions): Promise<LanguageModelSession> {
 		if (PromptHelper.isSupported() === false) {
 			throw new Error('Prompt API (LanguageModel) is not available in this browser.');
 		}
 		const model = globalThis.LanguageModel as LanguageModelStatic;
-		return await model.create({
-			initialPrompts: [{ role: 'system', content: systemPrompt }],
-		});
+		return await model.create(options);
 	}
 
 	static async *streamPrompt(
@@ -62,4 +60,4 @@ export class PromptHelper {
 	}
 }
 
-export type { LanguageModelSession };
+export type { LanguageModelMessage, LanguageModelSession };
