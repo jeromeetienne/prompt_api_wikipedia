@@ -1,6 +1,6 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import { PromptHelper, type LanguageModelMessage, type LanguageModelSession } from './helpers/prompt_helper.js';
+import { PromptHelper, type LanguageModelMessage, type LanguageModelSession, type LanguageModelAvailability } from './helpers/prompt_helper.js';
 import { WikipediaHelper } from './helpers/wikipedia_helper.js';
 import { LanguageDetectorHelper } from './helpers/language_detector_helper.js';
 import { SpeechRecognitionHelper } from './helpers/speech_recognition_helper.js';
@@ -72,6 +72,7 @@ export class Main {
 	private static history: LanguageModelMessage[] = [];
 	private static currentRecognition: SpeechRecognitionHelper | null = null;
 	private static lastDetectedLanguage: string | null = null;
+	private static bannerHideTimeoutId: number | null = null;
 
 	/**
 	 * Bootstraps the chat UI: caches DOM references, gates on Prompt API
@@ -119,6 +120,121 @@ export class Main {
 			micEl.hidden = false;
 			micEl.addEventListener('click', () => Main.toggleMic(micEl, inputEl));
 		}
+
+		void Main.checkModelAvailability();
+	}
+
+	/**
+	 * Reads the on-device model's current availability and updates the top
+	 * banner accordingly: a transient confirmation when ready, a persistent
+	 * notice while a download is needed/in progress.
+	 */
+	private static async checkModelAvailability(): Promise<void> {
+		let status: LanguageModelAvailability;
+		try {
+			status = await PromptHelper.availability();
+		} catch (err) {
+			console.warn('Failed to read model availability:', err);
+			return;
+		}
+		if (status === 'available') {
+			Main.showStatusBanner('success', 'Model ready', { autoHide: true });
+			return;
+		}
+		if (status === 'downloadable') {
+			Main.showStatusBanner('info', 'On-device model will download on your first question.', {});
+			return;
+		}
+		if (status === 'downloading') {
+			Main.showStatusBanner('info', 'Downloading on-device model…', { spinner: true });
+			void Main.attachToInProgressDownload();
+			return;
+		}
+		Main.showStatusBanner('warning', 'On-device model is unavailable on this browser.', {});
+	}
+
+	/**
+	 * When the page loads while a download is already in flight (from
+	 * another tab or a prior session), we have no monitor yet — so the
+	 * banner can only show a generic "Downloading…" string. This opens a
+	 * throwaway session purely to attach a `downloadprogress` listener;
+	 * progress events update the banner with a live percentage, and the
+	 * session is destroyed as soon as the download completes.
+	 */
+	private static async attachToInProgressDownload(): Promise<void> {
+		try {
+			const session = await PromptHelper.createSession({}, Main.onModelDownloadProgress);
+			session.destroy();
+		} catch (err) {
+			console.warn('Failed to attach to in-progress download:', err);
+		}
+	}
+
+	/**
+	 * Sets the banner content, swaps its alert-* color class, makes it
+	 * visible, and optionally schedules an auto-hide. A new call cancels any
+	 * pending auto-hide from a previous call so messages don't clobber each
+	 * other. When `spinner` is true, a small Bootstrap spinner is prepended.
+	 */
+	private static showStatusBanner(
+		kind: 'info' | 'success' | 'warning',
+		message: string,
+		options: { autoHide?: boolean; spinner?: boolean },
+	): void {
+		const bannerEl = document.getElementById('banner') as HTMLDivElement;
+		if (Main.bannerHideTimeoutId !== null) {
+			clearTimeout(Main.bannerHideTimeoutId);
+			Main.bannerHideTimeoutId = null;
+		}
+		const colorClass = kind === 'warning' ? 'text-warning' : 'text-muted';
+		const desiredClass = `small d-flex align-items-center ${colorClass}`;
+		const needsSpinner = options.spinner === true;
+		const hasSpinner = bannerEl.querySelector('.spinner-border') !== null;
+		const canReuse = bannerEl.hidden === false
+			&& bannerEl.className === desiredClass
+			&& hasSpinner === needsSpinner;
+
+		if (canReuse === true) {
+			// Only the text changed — mutate the text node in place so the
+			// spinner's CSS animation keeps spinning smoothly across updates.
+			const textNode = bannerEl.lastChild;
+			if (textNode !== null) {
+				textNode.textContent = message;
+			}
+		} else {
+			bannerEl.className = desiredClass;
+			bannerEl.replaceChildren();
+			if (needsSpinner === true) {
+				const spinnerEl = document.createElement('span');
+				spinnerEl.className = 'spinner-border spinner-border-sm me-2';
+				spinnerEl.setAttribute('role', 'status');
+				spinnerEl.setAttribute('aria-hidden', 'true');
+				bannerEl.appendChild(spinnerEl);
+			}
+			bannerEl.appendChild(document.createTextNode(message));
+			bannerEl.hidden = false;
+		}
+
+		if (options.autoHide === true) {
+			Main.bannerHideTimeoutId = window.setTimeout(() => {
+				bannerEl.hidden = true;
+				Main.bannerHideTimeoutId = null;
+			}, 3000);
+		}
+	}
+
+	/**
+	 * Handles a `downloadprogress` event emitted while the Prompt API
+	 * downloads the model: shows the percentage live with a spinner, then
+	 * flips to a short-lived "ready" confirmation when the download completes.
+	 */
+	private static onModelDownloadProgress(loaded: number): void {
+		if (loaded >= 1) {
+			Main.showStatusBanner('success', 'Model ready', { autoHide: true });
+			return;
+		}
+		const percent = Math.round(loaded * 100);
+		Main.showStatusBanner('info', `Downloading on-device model: ${percent}%…`, { spinner: true });
 	}
 
 	/**
@@ -234,7 +350,7 @@ export class Main {
 			initialPrompts,
 			temperature: 0.3,
 			topK: 3,
-		});
+		}, Main.onModelDownloadProgress);
 
 		let accumulated = '';
 		for await (const chunk of PromptHelper.streamPrompt(Main.chatSession, userPrompt)) {
@@ -352,7 +468,7 @@ export class Main {
 			],
 			temperature: 0.0,
 			topK: 1,
-		});
+		}, Main.onModelDownloadProgress);
 		try {
 			let output = '';
 			for await (const chunk of PromptHelper.streamPrompt(session, userInput)) {

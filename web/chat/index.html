@@ -74,33 +74,34 @@
     </nav>
 
     <div class="container d-flex flex-column flex-grow-1" style="max-width: 780px;">
-        <div id="banner" class="alert alert-warning small mt-3 mb-0" role="alert" hidden></div>
-
         <main id="messages" class="flex-grow-1 d-flex flex-column gap-3 py-3" aria-live="polite"></main>
 
-        <form id="form" class="pt-2 pb-2 bg-body sticky-bottom">
-            <div class="input-group input-group-lg shadow-sm">
-                <input id="input" class="form-control" type="text"
-                    placeholder="Ask a question about anything on Wikipedia…" autocomplete="off" required />
-                <button id="mic" type="button" class="btn btn-outline-secondary" title="Speak your question" hidden>
-                    <i class="bi bi-mic-fill"></i>
-                </button>
-                <button id="submit" class="btn btn-primary" type="submit">Ask</button>
+        <div class="bg-body sticky-bottom">
+            <form id="form" class="pt-2 pb-2">
+                <div class="input-group input-group-lg shadow-sm">
+                    <input id="input" class="form-control" type="text"
+                        placeholder="Ask a question about anything on Wikipedia…" autocomplete="off" required />
+                    <button id="mic" type="button" class="btn btn-outline-secondary" title="Speak your question"
+                        hidden>
+                        <i class="bi bi-mic-fill"></i>
+                    </button>
+                    <button id="submit" class="btn btn-primary" type="submit">Ask</button>
+                </div>
+            </form>
+            <div class="d-flex align-items-center pb-3">
+                <div id="banner" class="small text-warning" role="status" hidden></div>
+                <!-- *************************************************************************** -->
+                <!-- 	Made with love by Jerome Etienne					 -->
+                <!-- *************************************************************************** -->
+                <small class="ms-auto">
+                    Made with
+                    <i class="bi bi-heart-fill text-danger"></i>
+                    by
+                    <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank">
+                        Jerome Etienne
+                    </a>
+                </small>
             </div>
-        </form>
-
-        <!-- *************************************************************************** -->
-        <!-- 	Made with love by Jerome Etienne					 -->
-        <!-- *************************************************************************** -->
-        <div class="text-end pb-3">
-            <small>
-                Made with
-                <i class="bi bi-heart-fill text-danger"></i>
-                by
-                <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank">
-                    Jerome Etienne
-                </a>
-            </small>
         </div>
     </div>
 
