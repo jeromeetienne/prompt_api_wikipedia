@@ -153,7 +153,7 @@ export class Main {
 
 		let accumulated = '';
 		try {
-			accumulated = await Main.queryWikipedia(
+			const result = await Main.queryWikipedia(
 				userInput,
 				(statusText) => {
 					Main.insertStatusBubbleUi(messagesEl, assistantEl, statusText);
@@ -168,6 +168,11 @@ export class Main {
 					messagesEl.scrollTop = messagesEl.scrollHeight;
 				},
 			);
+			accumulated = result.text;
+			if (result.articles.length > 0) {
+				Main.appendSourcesFooterUi(assistantEl, result.articles);
+				messagesEl.scrollTop = messagesEl.scrollHeight;
+			}
 			Main.history.push({ role: 'assistant', content: accumulated });
 			Main.pruneHistory();
 		} catch (err) {
@@ -196,7 +201,7 @@ export class Main {
 		userInput: string,
 		onStatus: (text: string) => void,
 		onChunk: (accumulated: string) => void,
-	): Promise<string> {
+	): Promise<{ text: string; articles: WikipediaArticle[] }> {
 		const lang = await Main.detectChatLanguage();
 		console.log(`Detected chat language: "${lang}"`);
 
@@ -208,7 +213,7 @@ export class Main {
 		if (searchResults.length === 0) {
 			const fallback = 'No matching Wikipedia article was found for that question.';
 			onChunk(fallback);
-			return fallback;
+			return { text: fallback, articles: [] };
 		}
 		console.log('Search results:', searchResults);
 		const articles = await Promise.all(
@@ -236,7 +241,7 @@ export class Main {
 			accumulated += chunk;
 			onChunk(accumulated);
 		}
-		return accumulated;
+		return { text: accumulated, articles };
 	}
 
 	/**
@@ -448,6 +453,58 @@ export class Main {
 		messagesEl.appendChild(bubbleEl);
 		messagesEl.scrollTop = messagesEl.scrollHeight;
 		return bubbleEl;
+	}
+
+	/**
+	 * Appends a "Sources" footer to an assistant bubble: a thin separator
+	 * followed by one link per retrieved Wikipedia article. URLs come from
+	 * the article objects we fetched ourselves, never from the LLM output,
+	 * so they cannot be hallucinated or garbled.
+	 *
+	 * @param assistantEl - Assistant bubble to append the footer to.
+	 * @param articles    - Retrieved articles whose titles + URLs to render.
+	 * @returns The created footer element.
+	 */
+	private static appendSourcesFooterUi(
+		assistantEl: HTMLElement,
+		articles: WikipediaArticle[],
+	): HTMLDivElement {
+		const seen = new Set<string>();
+		const uniqueArticles = articles.filter((article) => {
+			if (seen.has(article.url) === true) {
+				return false;
+			}
+			seen.add(article.url);
+			return true;
+		});
+
+		const footerEl = document.createElement('div');
+		footerEl.className = 'mt-2 pt-2 border-top small text-secondary';
+
+		const labelEl = document.createElement('div');
+		labelEl.className = 'fw-semibold mb-1';
+		labelEl.textContent = 'Sources';
+		footerEl.appendChild(labelEl);
+
+		const listEl = document.createElement('ul');
+		listEl.className = 'list-unstyled mb-0';
+		for (const article of uniqueArticles) {
+			const itemEl = document.createElement('li');
+			const iconEl = document.createElement('i');
+			iconEl.className = 'bi bi-link-45deg me-1';
+			const linkEl = document.createElement('a');
+			linkEl.href = article.url;
+			linkEl.target = '_blank';
+			linkEl.rel = 'noreferrer';
+			linkEl.textContent = article.title;
+			itemEl.appendChild(iconEl);
+			itemEl.appendChild(linkEl);
+			listEl.appendChild(itemEl);
+		}
+		footerEl.appendChild(listEl);
+
+		assistantEl.appendChild(footerEl);
+		return footerEl;
 	}
 
 	/**
