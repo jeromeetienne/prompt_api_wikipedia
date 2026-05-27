@@ -18,7 +18,7 @@ github.com/jeromeetienne/prompt_api_wikipedia
 
 Chrome quietly shipped an on-device LLM, callable from a `<script>` tag as `window.LanguageModel`. No API key, no network round-trip for inference, no usage bill. It deserves a small demo.
 
-So I built one — Chat with Wikipedia, a retrieval-augmented chatbot that runs entirely in the browser. ~300 lines of TypeScript, a Vite config, two HTML pages. No backend.
+So I built one — On-Device Wikipedia Chat, a retrieval-augmented chatbot that runs entirely in the browser. ~300 lines of TypeScript, a Vite config, two HTML pages. No backend.
 
 A few details worth pulling out:
 

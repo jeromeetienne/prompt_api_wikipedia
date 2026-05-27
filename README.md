@@ -1,6 +1,6 @@
-# Chat with Wikipedia
+# On-Device Wikipedia Chat
 
-On-device chat grounded in Wikipedia, powered by Chrome's built-in [Prompt API](https://developer.chrome.com/docs/ai/prompt-api). The language model runs locally in your browser — no server round-trip.
+A serverless AI chatbot grounded in Wikipedia, powered by Chrome's built-in [Prompt API](https://developer.chrome.com/docs/ai/prompt-api) — your questions never leave your browser.
 
 **Live demo:** <https://jeromeetienne.github.io/prompt_api_wikipedia/>
 

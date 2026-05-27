@@ -7,8 +7,8 @@ proxy — an actual on-device LLM, accessible from JavaScript as
 No fetch, no token, no bill.
 
 That's a fairly large shift, and it deserves small, sharp demos that show what
-becomes possible when inference moves to the client. [Chat with
-Wikipedia](https://github.com/jeromeetienne/prompt_api_wikipedia) is one of
+becomes possible when inference moves to the client. [On-Device
+Wikipedia Chat](https://github.com/jeromeetienne/prompt_api_wikipedia) is one of
 those demos. It is a complete retrieval-augmented chatbot, grounded in real
 encyclopedia content, that runs without a backend. The whole thing fits in a
 few hundred lines of TypeScript and a Vite config.
